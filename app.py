@@ -57,9 +57,29 @@ class AudioUpload(Resource):
                 res=json.loads(res)
                 en_translation=res['translation'][0]
 
+                #使用gpt获得图片提示词
+                response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "你是一个善于根据描述语句给出基于Dalle-2提示词的助手"},
+                    {"role": "user", "content": "帮我将一段话转化为基于dalle-2的提示词,提示词用逗号相连,图片风格为童话类型。  +"+en_translation},
+                ]
+                )
+                prompt=response["choices"][0]["message"]["content"]
+
+                #使用Dalle-2生成图片
+                response = openai.Image.create(
+                prompt=prompt,
+                n=2,
+                size="512x512",
+                response_format="b64_json"
+                )
+                image_url = response['data']
+
                 
 
-                return {'message': transcript+"  "+en_translation}, 200
+                return {'message': image_url}, 200
+            
             else:
                 return {'message': '没有找到音频文件'}, 400
         except Exception as e:
